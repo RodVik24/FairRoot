@@ -498,6 +498,7 @@ void FairRootManager::ReadBranchEvent(const char* BrName)
 Int_t FairRootManager::ReadNonTimeBasedEventFromBranches(Int_t Entry)
 {
     if (fSource) {
+    SetEntryNr(Entry);
         TObject* Obj;
         fListOfNonTimebasedBranchesIter->Reset();
         while ((Obj = fListOfNonTimebasedBranchesIter->Next())) {

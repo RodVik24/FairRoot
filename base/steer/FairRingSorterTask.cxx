@@ -39,7 +39,7 @@ InitStatus FairRingSorterTask::Init()
     fSorter = InitSorter(fNumberOfCells, fWidthOfCells);
 
     // Create and register output array
-    fInputArray = FairRootManager::Instance()->GetTClonesArray(fInputBranch);
+    fInputArray = (TClonesArray *)ioman->GetObject(fInputBranch);
 
     if (fVerbose > 1) {
         Info("Init", "Registering this branch: %s/%s", fFolder.Data(), fOutputBranch.Data());

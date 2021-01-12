@@ -376,45 +376,59 @@ Bool_t FairMixedSource::SpecifyRunId()
 
 Int_t FairMixedSource::ReadEvent(UInt_t i)
 {
-    SetEventTime();
+  SetEventTime();
+  fCurrentEntryNo=i;
+  Double_t SBratio=gRandom->Uniform(0,1);
+  Bool_t GetASignal=kFALSE;
 
-    Double_t SBratio = gRandom->Uniform(0, 1);
-    Bool_t GetASignal = kFALSE;
-
-    if (fSBRatiobyN || fSBRatiobyT) {
-        Double_t ratio = 0;
-        for (const auto& mi : fSignalBGN) {
-            ratio = mi.second;
-            LOG(debug) << "---Check signal no. " << mi.first << " SBratio " << SBratio << " : ratio " << ratio;
-            if (SBratio <= ratio) {
-                TChain* chain = fSignalTypeList[mi.first];
-                UInt_t entry = fCurrentEntry[mi.first];
-                chain->GetEntry(entry);
-                fOutHeader->SetMCEntryNumber(entry);
-                fOutHeader->SetInputFileId(mi.first);
-                fOutHeader->SetEventTime(GetEventTime());
-                GetASignal = kTRUE;
-                fCurrentEntry[mi.first] = entry + 1;
-                LOG(debug) << "---Get entry No. " << entry << " from signal chain number --- " << mi.first << " --- ";
-                break;
-            }
-        }
-        if (!GetASignal) {
-            UInt_t entry = fCurrentEntry[0];
-            fBackgroundChain->GetEntry(entry);
-            fOutHeader->SetMCEntryNumber(entry);
-            fOutHeader->SetInputFileId(0);   // Background files has always 0 as Id
-            fOutHeader->SetEventTime(GetEventTime());
-            fCurrentEntry[0] = entry + 1;
-            LOG(debug) << "---Get entry from background chain  --- ";
-        }
+  if(fSBRatiobyN || fSBRatiobyT ) {
+    Double_t ratio=0;
+    if(fCurrentEntryNo==0) {
+    	fCurrentEntry[0]=0;
+      for (const auto& mi : fSignalBGN) {
+        ratio+=mi.second;
+        fCurrentEntry[mi.first]=0;
+        fSignalBGN[mi.first]=ratio;
+        LOG(debug) << "--------------Set signal no. " << mi.first << " weight " << ratio << ".";
+      }
     }
+    ratio=0;
+    for(const auto& mi : fSignalBGN) {
+      ratio=mi.second;
+      LOG(debug) << "---Check signal no. " << mi.first << " SBratio " << SBratio << " : ratio " << ratio;
+      if(SBratio <=ratio) {
+        TChain* chain = fSignalTypeList[mi.first];
+        UInt_t entry = fCurrentEntry[mi.first];
+       // if(i==0) entry = 0;
+        chain->GetEntry(entry);
+        fOutHeader->SetMCEntryNumber(entry);
+        fOutHeader->SetInputFileId(mi.first);
+        fOutHeader->SetEventTime(GetEventTime());
+        GetASignal=kTRUE;
+        fCurrentEntry[mi.first]=entry+1;
+        LOG(debug) << "---Get entry No. " << entry << " from signal chain number --- " << mi.first << " --- ";
+        break;
+      }
+    }
+    if(!GetASignal) {
+      UInt_t entry = fCurrentEntry[0];
+  	 // if(i==0) entry = 0;
+      LOG(debug) << "---Get entry No. " << entry <<" --- ";
+      fBackgroundChain->GetEntry(entry);
+      fOutHeader->SetMCEntryNumber(entry);
+      fOutHeader->SetInputFileId(0); //Background files has always 0 as Id
+      fOutHeader->SetEventTime(GetEventTime());
+      fCurrentEntry[0]=entry+1;
+      LOG(debug) << "---Get entry from background chain  --- ";
+    }
+    
+  }
 
-    fCurrentEntryNo = i;
-    fOutHeader->SetEventTime(GetEventTime());
-    LOG(debug) << "--Event number --- " << fCurrentEntryNo << " with time ----" << GetEventTime();
+ // fCurrentEntryNo=i;
+  fOutHeader->SetEventTime(GetEventTime());
+  LOG(debug) << "--Event number --- " << fCurrentEntryNo << " with time ----" << GetEventTime();
 
-    return 0;
+  return 0;
 }
 
 void FairMixedSource::Close() {}
